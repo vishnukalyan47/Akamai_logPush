@@ -1,8 +1,10 @@
 import json
+import requests
 
 log_path = '/aklogs'
 status_test = '/apistatus'
 test_path = '/test-path'
+url = "https://httpbin.org/post"
 
 def lambda_handler(event, context):
     # print('Request event: ', event)
@@ -13,7 +15,7 @@ def lambda_handler(event, context):
         http_method = event.get('httpMethod')
         path = event.get('path')
         if http_method == 'POST' and path == log_path:
-            response = kibana_call(200, json.loads(event['body']))
+            response = test_post(200, json.loads(event['body']))
         elif http_method == 'GET' and path == test_path:
             response = kibana_call(200, test_bodyy)
         elif http_method == 'GET' and path == status_test:
@@ -33,4 +35,15 @@ def kibana_call(status_code, request_body):
             'Content-Type': 'application/json'
         },
         'body': json.dumps(request_body)
+    }
+    
+def test_post(status_code, request_body):
+    response1 = requests.post(url, json=request_body)
+    return {
+        'statusCode' : response1.status_code,
+        'headers': {
+            'Content-Type': 'application/json'
+        },
+        'body': json.dumps(response1.json())
+        
     }
