@@ -1,5 +1,8 @@
 import json
-# from botocore.vendored import requests
+import boto3
+import datetime
+
+s3 = boto3.client('s3')
 
 log_path = '/aklogs'
 status_test = '/apistatus'
@@ -25,9 +28,12 @@ def lambda_handler(event, context):
         response = {400, 'Error processing request'}
 
     return response
+    
+
 
 # Print Response, can add Kibana api here.
 def getCalltest(status_code, request_body):
+    
     return {
         'statusCode' : status_code,
         'headers': {
@@ -37,7 +43,7 @@ def getCalltest(status_code, request_body):
     }
     
 def kibana_call(status_code, request_body):
-    # json split logic ->
+    
     rb_copy = request_body
     final_jsonLog = []
     start = 0
@@ -48,7 +54,8 @@ def kibana_call(status_code, request_body):
         individual_json_split = rb_copy[start:end]
         final_jsonLog.append(json.loads(individual_json_split))
         start = end
-    
+        
+    s3_dump(final_jsonLog)
     
     return {
         'statusCode' : status_code,
@@ -57,3 +64,34 @@ def kibana_call(status_code, request_body):
         },
         'body': json.dumps(final_jsonLog)
     }
+    
+# s3 to dump data as array of json    
+def s3_dump(logBody):
+    toByteStream = bytes(json.dumps(logBody).encode('UTF-8'))
+
+    s3_bucket = 'ak-log-bucket1'
+    
+    ist_delta = datetime.timedelta(hours=5, minutes=30)
+    utc_ist_combined_time = datetime.datetime.now() + ist_delta
+    logTime = str(utc_ist_combined_time)
+    fileType = 'arrayData'+'-'+f'{logTime}'+'.arraytype'
+    
+    
+    s3.put_object(Bucket=s3_bucket, Key=fileType, Body=toByteStream )
+    print("Dump Complete")
+    
+    
+# s3 to dump data as json file
+def s3_dump(logBody):
+    toByteStream = bytes(json.dumps(logBody).encode('UTF-8'))
+
+    s3_bucket = 'ak-log-bucket1'
+    
+    ist_delta = datetime.timedelta(hours=5, minutes=30)
+    utc_ist_combined_time = datetime.datetime.now() + ist_delta
+    logTime = str(utc_ist_combined_time)
+    fileType = 'jsonData'+'-'+f'{logTime}'+'.json'
+    
+    
+    s3.put_object(Bucket=s3_bucket, Key=fileType, Body=toByteStream )
+    print("Dump Complete")
